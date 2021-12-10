@@ -58,8 +58,8 @@ type Delivery struct {
 	Body []byte
 }
 
-func newDelivery(channel *Channel, msg messageWithContent) *Delivery {
-	props, body := msg.getContent()
+func newDelivery(channel *Channel, msg MessageWithContent) *Delivery {
+	props, body := msg.GetContent()
 
 	delivery := Delivery{
 		Acknowledger: channel,
@@ -83,14 +83,14 @@ func newDelivery(channel *Channel, msg messageWithContent) *Delivery {
 
 	// Properties for the delivery types
 	switch m := msg.(type) {
-	case *basicDeliver:
+	case *BasicDeliver:
 		delivery.ConsumerTag = m.ConsumerTag
 		delivery.DeliveryTag = m.DeliveryTag
 		delivery.Redelivered = m.Redelivered
 		delivery.Exchange = m.Exchange
 		delivery.RoutingKey = m.RoutingKey
 
-	case *basicGetOk:
+	case *BasicGetOk:
 		delivery.MessageCount = m.MessageCount
 		delivery.DeliveryTag = m.DeliveryTag
 		delivery.Redelivered = m.Redelivered
