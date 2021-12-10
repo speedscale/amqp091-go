@@ -1,3 +1,3 @@
-module github.com/rabbitmq/amqp091-go
+module github.com/speedscale/amqp091-go
 
 go 1.15
