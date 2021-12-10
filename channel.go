@@ -16,7 +16,7 @@ import (
 // | type | channel |     size    |  |  payload   |  | frame-end |
 // +------+---------+-------------+  +------------+  +-----------+
 //  octet   short         long         size octets       octet
-const frameHeaderSize = 1 + 2 + 4 + 1
+const FrameHeaderSize = 1 + 2 + 4 + 1
 
 /*
 Channel represents an AMQP channel. Used as a context for valid message
@@ -225,7 +225,7 @@ func (ch *Channel) sendOpen(msg Message) (err error) {
 		// set size to length of what we're trying to publish
 		var size int
 		if ch.connection.Config.FrameSize > 0 {
-			size = ch.connection.Config.FrameSize - frameHeaderSize
+			size = ch.connection.Config.FrameSize - FrameHeaderSize
 		} else {
 			size = len(body)
 		}
