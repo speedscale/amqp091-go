@@ -344,11 +344,11 @@ func (c *Connection) Close() error {
 
 	defer c.shutdown(nil)
 	return c.call(
-		&connectionClose{
+		&ConnectionClose{
 			ReplyCode: ReplySuccess,
 			ReplyText: "kthxbai",
 		},
-		&connectionCloseOk{},
+		&ConnectionCloseOk{},
 	)
 }
 
@@ -359,11 +359,11 @@ func (c *Connection) closeWith(err *Error) error {
 
 	defer c.shutdown(err)
 	return c.call(
-		&connectionClose{
+		&ConnectionClose{
 			ReplyCode: uint16(err.Code),
 			ReplyText: err.Reason,
 		},
-		&connectionCloseOk{},
+		&ConnectionCloseOk{},
 	)
 }
 
@@ -459,19 +459,19 @@ func (c *Connection) dispatch0(f Frame) {
 	switch mf := f.(type) {
 	case *MethodFrame:
 		switch m := mf.Method.(type) {
-		case *connectionClose:
+		case *ConnectionClose:
 			// Send immediately as shutdown will close our side of the writer.
 			c.send(&MethodFrame{
 				ChannelId: 0,
-				Method:    &connectionCloseOk{},
+				Method:    &ConnectionCloseOk{},
 			})
 
 			c.shutdown(NewError(m.ReplyCode, m.ReplyText))
-		case *connectionBlocked:
+		case *ConnectionBlocked:
 			for _, c := range c.blocks {
 				c <- Blocking{Active: true, Reason: m.Reason}
 			}
-		case *connectionUnblocked:
+		case *ConnectionUnblocked:
 			for _, c := range c.blocks {
 				c <- Blocking{Active: false}
 			}
@@ -513,12 +513,12 @@ func (c *Connection) dispatchClosed(f Frame) {
 	// Only consider method frames, drop content/header frames
 	if mf, ok := f.(*MethodFrame); ok {
 		switch mf.Method.(type) {
-		case *channelClose:
+		case *ChannelClose:
 			c.send(&MethodFrame{
 				ChannelId: f.Channel(),
-				Method:    &channelCloseOk{},
+				Method:    &ChannelCloseOk{},
 			})
-		case *channelCloseOk:
+		case *ChannelCloseOk:
 			// we are already closed, so do nothing
 		default:
 			// unexpected method on closed channel
@@ -727,7 +727,7 @@ func (c *Connection) open(config Config) error {
 }
 
 func (c *Connection) openStart(config Config) error {
-	start := &connectionStart{}
+	start := &ConnectionStart{}
 
 	if err := c.call(nil, start); err != nil {
 		return err
@@ -767,13 +767,13 @@ func (c *Connection) openTune(config Config, auth Authentication) error {
 		"consumer_cancel_notify": true,
 	}
 
-	ok := &connectionStartOk{
+	ok := &ConnectionStartOk{
 		ClientProperties: config.Properties,
 		Mechanism:        auth.Mechanism(),
 		Response:         auth.Response(),
 		Locale:           config.Locale,
 	}
-	tune := &connectionTune{}
+	tune := &ConnectionTune{}
 
 	if err := c.call(ok, tune); err != nil {
 		// per spec, a connection can only be closed when it has been opened
@@ -806,7 +806,7 @@ func (c *Connection) openTune(config Config, auth Authentication) error {
 
 	if err := c.send(&MethodFrame{
 		ChannelId: 0,
-		Method: &connectionTuneOk{
+		Method: &ConnectionTuneOk{
 			ChannelMax: uint16(c.Config.ChannelMax),
 			FrameMax:   uint32(c.Config.FrameSize),
 			Heartbeat:  uint16(c.Config.Heartbeat / time.Second),
@@ -819,8 +819,8 @@ func (c *Connection) openTune(config Config, auth Authentication) error {
 }
 
 func (c *Connection) openVhost(config Config) error {
-	req := &connectionOpen{VirtualHost: config.Vhost}
-	res := &connectionOpenOk{}
+	req := &ConnectionOpen{VirtualHost: config.Vhost}
+	res := &ConnectionOpenOk{}
 
 	if err := c.call(req, res); err != nil {
 		// Cannot be closed yet, but we know it's a vhost problem

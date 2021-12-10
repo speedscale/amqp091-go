@@ -4,3 +4,4 @@ examples/simple-consumer/simple-consumer
 examples/simple-producer/simple-producer
 
 .idea/
+vendor/

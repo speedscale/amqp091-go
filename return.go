@@ -36,7 +36,7 @@ type Return struct {
 	Body []byte
 }
 
-func newReturn(msg basicReturn) *Return {
+func newReturn(msg BasicReturn) *Return {
 	props, body := msg.GetContent()
 
 	return &Return{

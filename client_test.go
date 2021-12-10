@@ -21,8 +21,8 @@ type server struct {
 	C io.ReadWriteCloser // Client IO
 
 	// captured client frames
-	start connectionStartOk
-	tune  connectionTuneOk
+	start ConnectionStartOk
+	tune  ConnectionTuneOk
 }
 
 var defaultLogin = "guest"
@@ -168,7 +168,7 @@ func (t *server) expectAMQP() {
 }
 
 func (t *server) connectionStartWithMechanisms(mechs string, recv bool) {
-	t.send(0, &connectionStart{
+	t.send(0, &ConnectionStart{
 		VersionMajor: 0,
 		VersionMinor: 9,
 		Mechanisms:   mechs,
@@ -185,7 +185,7 @@ func (t *server) connectionStart() {
 }
 
 func (t *server) connectionTune() {
-	t.send(0, &connectionTune{
+	t.send(0, &ConnectionTune{
 		ChannelMax: 11,
 		FrameMax:   20000,
 		Heartbeat:  10,
@@ -199,18 +199,18 @@ func (t *server) connectionOpen() {
 	t.connectionStart()
 	t.connectionTune()
 
-	t.recv(0, &connectionOpen{})
-	t.send(0, &connectionOpenOk{})
+	t.recv(0, &ConnectionOpen{})
+	t.send(0, &ConnectionOpenOk{})
 }
 
 func (t *server) connectionClose() {
-	t.recv(0, &connectionClose{})
-	t.send(0, &connectionCloseOk{})
+	t.recv(0, &ConnectionClose{})
+	t.send(0, &ConnectionCloseOk{})
 }
 
 func (t *server) channelOpen(id int) {
-	t.recv(id, &channelOpen{})
-	t.send(id, &channelOpenOk{})
+	t.recv(id, &ChannelOpen{})
+	t.send(id, &ChannelOpenOk{})
 }
 
 func TestDefaultClientProperties(t *testing.T) {
@@ -324,8 +324,8 @@ func TestOpenAMQPlainAuth(t *testing.T) {
 		table, _ := readTable(&authresp)
 		srv.connectionTune()
 
-		srv.recv(0, &connectionOpen{})
-		srv.send(0, &connectionOpenOk{})
+		srv.recv(0, &ConnectionOpen{})
+		srv.send(0, &ConnectionOpenOk{})
 		rwc.Close()
 		auth <- table
 	}()
@@ -365,7 +365,7 @@ func TestOpenFailedVhost(t *testing.T) {
 		srv.expectAMQP()
 		srv.connectionStart()
 		srv.connectionTune()
-		srv.recv(0, &connectionOpen{})
+		srv.recv(0, &ConnectionOpen{})
 
 		// Now kill/timeout the connection on bad Vhost
 		rwc.Close()
@@ -385,30 +385,30 @@ func TestConfirmMultipleOrdersDeliveryTags(t *testing.T) {
 		srv.connectionOpen()
 		srv.channelOpen(1)
 
-		srv.recv(1, &confirmSelect{})
-		srv.send(1, &confirmSelectOk{})
+		srv.recv(1, &ConfirmSelect{})
+		srv.send(1, &ConfirmSelectOk{})
 
-		srv.recv(1, &basicPublish{})
-		srv.recv(1, &basicPublish{})
-		srv.recv(1, &basicPublish{})
-		srv.recv(1, &basicPublish{})
+		srv.recv(1, &BasicPublish{})
+		srv.recv(1, &BasicPublish{})
+		srv.recv(1, &BasicPublish{})
+		srv.recv(1, &BasicPublish{})
 
 		// Single tag, plus multiple, should produce
 		// 2, 1, 3, 4
-		srv.send(1, &basicAck{DeliveryTag: 2})
-		srv.send(1, &basicAck{DeliveryTag: 1})
-		srv.send(1, &basicAck{DeliveryTag: 4, Multiple: true})
+		srv.send(1, &BasicAck{DeliveryTag: 2})
+		srv.send(1, &BasicAck{DeliveryTag: 1})
+		srv.send(1, &BasicAck{DeliveryTag: 4, Multiple: true})
 
-		srv.recv(1, &basicPublish{})
-		srv.recv(1, &basicPublish{})
-		srv.recv(1, &basicPublish{})
-		srv.recv(1, &basicPublish{})
+		srv.recv(1, &BasicPublish{})
+		srv.recv(1, &BasicPublish{})
+		srv.recv(1, &BasicPublish{})
+		srv.recv(1, &BasicPublish{})
 
 		// And some more, but in reverse order, multiple then one
 		// 5, 6, 7, 8
-		srv.send(1, &basicAck{DeliveryTag: 6, Multiple: true})
-		srv.send(1, &basicAck{DeliveryTag: 8})
-		srv.send(1, &basicAck{DeliveryTag: 7})
+		srv.send(1, &BasicAck{DeliveryTag: 6, Multiple: true})
+		srv.send(1, &BasicAck{DeliveryTag: 8})
+		srv.send(1, &BasicAck{DeliveryTag: 7})
 	}()
 
 	c, err := Open(rwc, defaultConfig())
@@ -461,11 +461,11 @@ func TestNotifyClosesReusedPublisherConfirmChan(t *testing.T) {
 		srv.connectionOpen()
 		srv.channelOpen(1)
 
-		srv.recv(1, &confirmSelect{})
-		srv.send(1, &confirmSelectOk{})
+		srv.recv(1, &ConfirmSelect{})
+		srv.send(1, &ConfirmSelectOk{})
 
-		srv.recv(0, &connectionClose{})
-		srv.send(0, &connectionCloseOk{})
+		srv.recv(0, &ConnectionClose{})
+		srv.send(0, &ConnectionCloseOk{})
 	}()
 
 	c, err := Open(rwc, defaultConfig())
@@ -497,8 +497,8 @@ func TestNotifyClosesAllChansAfterConnectionClose(t *testing.T) {
 		srv.connectionOpen()
 		srv.channelOpen(1)
 
-		srv.recv(0, &connectionClose{})
-		srv.send(0, &connectionCloseOk{})
+		srv.recv(0, &ConnectionClose{})
+		srv.send(0, &ConnectionCloseOk{})
 	}()
 
 	c, err := Open(rwc, defaultConfig())
@@ -570,7 +570,7 @@ func TestPublishBodySliceIssue74(t *testing.T) {
 		srv.channelOpen(1)
 
 		for i := 0; i < publishings; i++ {
-			srv.recv(1, &basicPublish{})
+			srv.recv(1, &BasicPublish{})
 		}
 
 		done <- true
@@ -610,7 +610,7 @@ func TestPublishZeroFrameSizeIssue161(t *testing.T) {
 		srv.channelOpen(1)
 
 		for i := 0; i < publishings; i++ {
-			srv.recv(1, &basicPublish{})
+			srv.recv(1, &BasicPublish{})
 		}
 
 		done <- true
@@ -647,7 +647,7 @@ func TestPublishAndShutdownDeadlockIssue84(t *testing.T) {
 	go func() {
 		srv.connectionOpen()
 		srv.channelOpen(1)
-		srv.recv(1, &basicPublish{})
+		srv.recv(1, &BasicPublish{})
 		// Mimic a broken io pipe so that Publish catches the error and goes into shutdown
 		srv.S.Close()
 	}()
@@ -693,7 +693,7 @@ func TestChannelReturnsCloseRace(t *testing.T) {
 	// channel) while we call shutdown concurrently
 	go func() {
 		for i := 0; i < 100; i++ {
-			ch.dispatch(&basicReturn{})
+			ch.dispatch(&BasicReturn{})
 		}
 	}()
 
@@ -712,20 +712,20 @@ func TestLeakClosedConsumersIssue264(t *testing.T) {
 		srv.connectionOpen()
 		srv.channelOpen(1)
 
-		srv.recv(1, &basicQos{})
-		srv.send(1, &basicQosOk{})
+		srv.recv(1, &BasicQos{})
+		srv.send(1, &BasicQosOk{})
 
-		srv.recv(1, &basicConsume{})
-		srv.send(1, &basicConsumeOk{ConsumerTag: tag})
+		srv.recv(1, &BasicConsume{})
+		srv.send(1, &BasicConsumeOk{ConsumerTag: tag})
 
 		// This delivery is intended to be consumed
-		srv.send(1, &basicDeliver{ConsumerTag: tag, DeliveryTag: 1})
+		srv.send(1, &BasicDeliver{ConsumerTag: tag, DeliveryTag: 1})
 
 		// This delivery is intended to be dropped
-		srv.send(1, &basicDeliver{ConsumerTag: tag, DeliveryTag: 2})
+		srv.send(1, &BasicDeliver{ConsumerTag: tag, DeliveryTag: 2})
 
-		srv.recv(0, &connectionClose{})
-		srv.send(0, &connectionCloseOk{})
+		srv.recv(0, &ConnectionClose{})
+		srv.send(0, &ConnectionCloseOk{})
 		srv.C.Close()
 	}()
 
